@@ -1,4 +1,4 @@
-from skinnytaste import SkinnyTasteRecipe
+from meal_planner import SkinnyTasteRecipe
 
 my_recipe = SkinnyTasteRecipe("https://www.skinnytaste.com/turkey-stuffed-peppers-45-pts/")
 print(my_recipe.get_recipe())
