@@ -1,7 +1,14 @@
-from meal_planner import SkinnyTasteRecipe
+import os
+from meal_planner import ICalConnection, create_meal_plans_from_calendar
 
-my_recipe = SkinnyTasteRecipe("https://www.skinnytaste.com/turkey-stuffed-peppers-45-pts/")
-print(my_recipe.get_recipe())
+ical = ICalConnection(os.getenv("CALENDAR_URL"))
 
-recipe_2 = SkinnyTasteRecipe("https://www.skinnytaste.com/turkey-enchilada-stuffed-poblanos-rellenos/")
-print(recipe_2.get_recipe())
+plans = create_meal_plans_from_calendar(ical, 7)
+
+plans_dict = sorted(plans, key=lambda x: x.date)
+
+for plan in plans_dict:
+    print(f"{plan.date}: {plan.name}")
+    if plan.recipe:
+        for ingredient in plan.recipe.ingredients:
+            print("  " + str(ingredient))
