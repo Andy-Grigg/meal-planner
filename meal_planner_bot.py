@@ -10,6 +10,7 @@ from meal_planner import (
     ICalConnection,
 )
 
+
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 GUILD_ID = os.getenv('DISCORD_GUILD_ID')
