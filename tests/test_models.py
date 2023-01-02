@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from meal_planner_bot.utils.models import Ingredient
+from meal_planner_bot.utils import Ingredient
 
 
 def test_ingredient_name_only():

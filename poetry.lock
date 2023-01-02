@@ -222,7 +222,7 @@ unicode-backport = ["unicodedata2"]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 files = [
@@ -437,7 +437,7 @@ files = [
 name = "iniconfig"
 version = "1.1.1"
 description = "iniconfig: brain-dead simple config-ini parsing"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 files = [
@@ -533,7 +533,7 @@ files = [
 name = "packaging"
 version = "22.0"
 description = "Core utilities for Python packages"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -545,7 +545,7 @@ files = [
 name = "pluggy"
 version = "1.0.0"
 description = "plugin and hook calling mechanisms for python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -724,7 +724,7 @@ diagrams = ["jinja2", "railroad-diagrams"]
 name = "pytest"
 version = "7.2.0"
 description = "pytest: simple powerful testing with Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1006,4 +1006,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "130cc05965c24a3c3234be7b9cbfe7f14e621dfecab2ef82843f50e9fad2d422"
+content-hash = "a7cf18dec3ae907a7294fcd1134e6aedb5f780c93fb296500b87cbe1c7491938"

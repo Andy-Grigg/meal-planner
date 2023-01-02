@@ -1,10 +1,12 @@
 [tool.poetry]
-name = "meal-planner"
+name = "meal_planner_bot"
 version = "0.1.0"
 description = ""
 authors = ["Andy Grigg <mail@andygrigg.com>"]
 readme = "README.md"
-packages = [{include = "src"}]
+packages = [
+    {include = "meal_planner_bot", from="src"}
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
