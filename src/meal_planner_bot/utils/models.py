@@ -4,7 +4,6 @@ from typing import Optional
 from bunnet import Document
 from pydantic import BaseModel, validator
 
-
 __all__ = [
     "Ingredient",
     "Recipe",
@@ -19,7 +18,7 @@ class Ingredient(BaseModel):
 
     @validator("unit")
     def unit_only_allowed_if_with_amount(cls, v, values, **kwargs):
-        if "amount" not in values or values["amount"] is None:
+        if v and ("amount" not in values or values["amount"] is None):
             raise ValueError("Unit can only be specified with an amount.")
         return v
 

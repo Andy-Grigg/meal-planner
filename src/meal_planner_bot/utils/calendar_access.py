@@ -32,7 +32,7 @@ class ICalConnection:
         if not self._ical:
             logger.info(f"Downloading ICal data from {self._calendar_url}")
             if self._fix_apple:
-                logger.info(f"iCloud URL detected, set fix_apple=True")
+                logger.info("iCloud URL detected, set fix_apple=True")
             self._ical = ICalDownload().data_from_url(
                 self._calendar_url, self._fix_apple
             )
