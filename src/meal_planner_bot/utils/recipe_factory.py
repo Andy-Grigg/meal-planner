@@ -47,7 +47,7 @@ class RecipeFactory(ABC):
             recipe = None
             for source, klass in cls.recipe_scrapers.items():
                 if source and source in hostname:
-                    recipe = klass(*args, **kwargs).model
+                    recipe = klass(*args, **kwargs)
             if recipe is None:
                 raise UnknownRecipeProvider(f"No implementation found for {hostname}")
 
