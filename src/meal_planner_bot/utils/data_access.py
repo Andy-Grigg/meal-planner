@@ -32,9 +32,9 @@ def requires_connection(func):
 
 
 @requires_connection
-def get_recipe(recipe_name: str) -> Recipe:
+def get_recipe(recipe_name: str, raise_on_missing: bool = False) -> Recipe:
     recipe = Recipe.find_one(Recipe.name == recipe_name).run()
-    if not recipe:
+    if not recipe and raise_on_missing:
         raise ValueError(f"Recipe {recipe_name} not found in database.")
     return recipe
 
@@ -44,13 +44,13 @@ def write_recipe(name: str, url: str, ingredients: list[Ingredient]) -> None:
     logger.info(f"Writing recipe {name} to database.")
     recipe = Recipe(name=name, url=url, ingredients=ingredients)
     recipe.insert()
-    logger.info(f"Success.")
+    logger.info("Success.")
 
 
 @requires_connection
 def delete_recipe(name: str) -> None:
     logger.info(f"Deleting recipe {name} from database.")
-    recipe_to_delete = get_recipe(name).delete()
+    get_recipe(name, raise_on_missing=True).delete()
 
 
 @requires_connection

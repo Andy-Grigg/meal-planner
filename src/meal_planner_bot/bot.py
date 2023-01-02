@@ -4,8 +4,8 @@ from functools import wraps
 
 import discord
 
-from meal_planner_bot.utils import (
-    ICalConnection,
+from meal_planner_bot.utils.calendar_access import ICalConnection
+from meal_planner_bot.utils.helper_functions import (
     convert_calendar_to_meal_plans,
     create_recipe,
     delete_recipe,
@@ -60,7 +60,7 @@ async def on_ready():
     guild=guild,
 )
 @database_access
-async def on_message(interaction, number_of_days: int = 10):
+async def shopping_list(interaction, number_of_days: int = 10):
     ical = ICalConnection(os.getenv("CALENDAR_URL"))
     plans = convert_calendar_to_meal_plans(ical, number_of_days)
     for plan in plans:
@@ -74,7 +74,7 @@ async def on_message(interaction, number_of_days: int = 10):
     guild=guild,
 )
 @database_access
-async def on_message(interaction, number_of_days: int = 10):
+async def meal_plan(interaction, number_of_days: int = 10):
     ical = ICalConnection(os.getenv("CALENDAR_URL"))
     plans = convert_calendar_to_meal_plans(ical, number_of_days)
     await interaction.user.send("\n".join([str(p) for p in plans]))
@@ -86,7 +86,7 @@ async def on_message(interaction, number_of_days: int = 10):
     guild=guild,
 )
 @database_access
-async def on_message(interaction, name: str, url: str | None = None):
+async def add_recipe(interaction, name: str, url: str | None = None):
     logger.info(f"name: {name}")
     logger.info(f"url: {url}")
     recipe = create_recipe(name, url)
@@ -99,7 +99,7 @@ async def on_message(interaction, name: str, url: str | None = None):
     guild=guild,
 )
 @database_access
-async def on_message(interaction):
+async def recipes(interaction):
     all_recipes = get_all_recipes()
     await interaction.user.send("\n".join([str(r) for r in all_recipes]))
 
@@ -110,7 +110,7 @@ async def on_message(interaction):
     guild=guild,
 )
 @database_access
-async def on_message(interaction, name: str):
+async def delete_recipe_cmd(interaction, name: str):
     delete_recipe(name)
     await interaction.user.send(f"Deleted recipe {name}")
 
@@ -121,7 +121,7 @@ async def on_message(interaction, name: str):
     guild=guild,
 )
 @database_access
-async def on_message(interaction, name: str):
+async def recipe_details(interaction, name: str):
     recipe = get_recipe(name)
     await interaction.user.send(recipe.shopping_list)
 

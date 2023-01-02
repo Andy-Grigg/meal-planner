@@ -31,7 +31,7 @@ def convert_calendar_to_meal_plans(
             if event.url:
                 create_recipe(name=event.summary, url=event.url)
             else:
-                logger.info(f"No URL provided. Ignoring.")
+                logger.info("No URL provided. Ignoring.")
         else:
             logger.info(f"Recipe {recipe.name} found in database.")
         mp = MealPlan(name=event.summary, date=event.start.date(), recipe=recipe)
