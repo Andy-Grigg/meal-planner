@@ -1,26 +1,25 @@
 import logging
+import os
 
-from pymongo import MongoClient
 from bunnet import init_bunnet
+from pymongo import MongoClient
 
-from .models import Recipe, Ingredient
+from .models import Ingredient, Recipe
 
-logger = logging.getLogger("discord.meal_planner.data_access")
+logger = logging.getLogger("discord.meal_planner_bot.data_access")
+CONN_STRING = os.getenv("MONGO_CONNECTION_STRING")
 
 
 class _MongoConnection:
     instance: "_MongoConnection"
 
     def __new__(cls):
-        if not hasattr(cls, 'instance'):
+        if not hasattr(cls, "instance"):
             cls.instance = super(_MongoConnection, cls).__new__(cls)
         return cls.instance
 
-    def __init__(self):
-        # Bunnet uses Pymongo client under the hood
-        self.client = MongoClient("mongodb://user:hunter2@localhost:27017")
-
-        # Initialize bunnet with the Product document class
+    def __init__(self, connection_string: str | None = CONN_STRING):
+        self.client = MongoClient(connection_string)
         init_bunnet(database=self.client.db_name, document_models=[Recipe])
 
 
@@ -28,6 +27,7 @@ def requires_connection(func):
     def wrapper(*args, **kwargs):
         _MongoConnection()
         return func(*args, **kwargs)
+
     return wrapper
 
 

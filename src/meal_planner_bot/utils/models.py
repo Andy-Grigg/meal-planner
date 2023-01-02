@@ -2,7 +2,14 @@ from datetime import date
 from typing import Optional
 
 from bunnet import Document
-from pydantic import validator, BaseModel
+from pydantic import BaseModel, validator
+
+
+__all__ = [
+    "Ingredient",
+    "Recipe",
+    "MealPlan",
+]
 
 
 class Ingredient(BaseModel):
@@ -10,10 +17,10 @@ class Ingredient(BaseModel):
     amount: Optional[str | float | int]
     unit: Optional[str]
 
-    @validator('unit')
+    @validator("unit")
     def unit_only_allowed_if_with_amount(cls, v, values, **kwargs):
-        if 'amount' not in values:
-            raise ValueError("Unit can only be specified with a amount.")
+        if "amount" not in values or values["amount"] is None:
+            raise ValueError("Unit can only be specified with an amount.")
         return v
 
     def __str__(self) -> str:

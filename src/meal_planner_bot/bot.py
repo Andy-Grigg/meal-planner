@@ -1,47 +1,50 @@
-import os
 import logging
+import os
 from functools import wraps
 
 import discord
-from discord import app_commands
 
-from meal_planner import (
+from meal_planner_bot.utils import (
+    ICalConnection,
     convert_calendar_to_meal_plans,
-    create_and_persist_recipe,
-    get_calendar,
-    get_all_recipes,
+    create_recipe,
     delete_recipe,
+    get_all_recipes,
     get_recipe,
 )
 
+logger = logging.getLogger("discord.meal_planner_bot")
 
-TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
-GUILD_ID = os.getenv('DISCORD_GUILD_ID')
+TOKEN = os.getenv("DISCORD_TOKEN")
+GUILD = os.getenv("DISCORD_GUILD")
+GUILD_ID = os.getenv("DISCORD_GUILD_ID")
 
 guild = discord.Object(id=GUILD_ID)
 
 client = discord.Client(intents=discord.Intents.all())
-tree = app_commands.CommandTree(client)
-
-logger = logging.getLogger("discord.meal_planner")
+tree = discord.app_commands.CommandTree(client)
 
 
 def database_access(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
         interaction = args[0]
-        logger.info(f'{interaction.data["name"]} request received from user "{interaction.user}"')
+        logger.info(
+            f'{interaction.data["name"]} request received from user "{interaction.user}"'
+        )
         await interaction.response.defer()
         try:
             output = await func(*args, **kwargs)
         except Exception as e:
-            logger.info(f'Something went wrong... {str(e)}')
-            await interaction.followup.send("Something went wrong. Check your args and try again.")
+            logger.info(f"Something went wrong... {str(e)}")
+            await interaction.followup.send(
+                "Something went wrong. Check your args and try again."
+            )
             return None
         await interaction.followup.send("Done")
         logger.info(f'{interaction.data["name"]} completed')
         return output
+
     return wrapper
 
 
@@ -58,7 +61,7 @@ async def on_ready():
 )
 @database_access
 async def on_message(interaction, number_of_days: int = 10):
-    ical = get_calendar(os.getenv("CALENDAR_URL"))
+    ical = ICalConnection(os.getenv("CALENDAR_URL"))
     plans = convert_calendar_to_meal_plans(ical, number_of_days)
     for plan in plans:
         await interaction.user.send(plan.shopping_list)
@@ -72,7 +75,7 @@ async def on_message(interaction, number_of_days: int = 10):
 )
 @database_access
 async def on_message(interaction, number_of_days: int = 10):
-    ical = get_calendar(os.getenv("CALENDAR_URL"))
+    ical = ICalConnection(os.getenv("CALENDAR_URL"))
     plans = convert_calendar_to_meal_plans(ical, number_of_days)
     await interaction.user.send("\n".join([str(p) for p in plans]))
 
@@ -86,7 +89,7 @@ async def on_message(interaction, number_of_days: int = 10):
 async def on_message(interaction, name: str, url: str | None = None):
     logger.info(f"name: {name}")
     logger.info(f"url: {url}")
-    recipe = create_and_persist_recipe(name, url)
+    recipe = create_recipe(name, url)
     await interaction.user.send(f'Successfully imported recipe "{str(recipe)}".')
 
 

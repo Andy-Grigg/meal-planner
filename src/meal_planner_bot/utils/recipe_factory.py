@@ -1,13 +1,12 @@
 from abc import ABC
-import requests
-from bs4 import BeautifulSoup
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from .models import (
-    Ingredient,
-    Recipe as RecipeModel
-)
+import requests
+from bs4 import BeautifulSoup
+
+from .models import Ingredient
+from .models import Recipe as RecipeModel
 
 if TYPE_CHECKING:
     from bs4.element import Tag
@@ -26,10 +25,10 @@ class RecipeFactory(ABC):
         cls.recipe_scrapers[cls.hostname] = cls
 
     def __init__(
-            self,
-            name: str,
-            url: str | None = None,
-            ingredients: list["Ingredient"] | None = None
+        self,
+        name: str,
+        url: str | None = None,
+        ingredients: list["Ingredient"] | None = None,
     ):
         assert name, "All recipes must have a name"
         self.name = name
@@ -84,7 +83,7 @@ class WebpageRecipe(RecipeFactory):
 class SkinnyTasteRecipe(WebpageRecipe):
     hostname = "skinnytaste.com"
 
-    INGREDIENTS_SELECTOR = '.wprm-recipe-ingredient-group'
+    INGREDIENTS_SELECTOR = ".wprm-recipe-ingredient-group"
 
     PROP_TO_SELECTOR = {
         "amount": ".wprm-recipe-ingredient-amount",
@@ -96,12 +95,18 @@ class SkinnyTasteRecipe(WebpageRecipe):
     def ingredients(self) -> list["Ingredient"]:
         if self._ingredients is None:
             ingredients_tag = self.soup.select_one(self.INGREDIENTS_SELECTOR)
-            individual_ingredients_tags = ingredients_tag.find_all(['li'])
-            self._ingredients = [self._make_ingredient(ing_tag) for ing_tag in individual_ingredients_tags]
+            individual_ingredients_tags = ingredients_tag.find_all(["li"])
+            self._ingredients = [
+                self._make_ingredient(ing_tag)
+                for ing_tag in individual_ingredients_tags
+            ]
         return self._ingredients
 
     def _make_ingredient(self, ingredient_el: "Tag"):
-        fields = {f: self._get_text_from_selector(ingredient_el, s) for f, s in self.PROP_TO_SELECTOR.items()}
+        fields = {
+            f: self._get_text_from_selector(ingredient_el, s)
+            for f, s in self.PROP_TO_SELECTOR.items()
+        }
         ingredient = Ingredient(**fields)
         return ingredient
 
@@ -120,17 +125,22 @@ class FoodNetworkRecipe(WebpageRecipe):
     @property
     def ingredients(self) -> list["Ingredient"]:
         if self._ingredients is None:
-            ingredients_tag = self.soup.find_all('section', attrs={'data-module': 'recipe-ingredients'})
-            assert len(ingredients_tag) == 1, f"Expected 1 Ingredients block - found {len(ingredients_tag)}"
+            ingredients_tag = self.soup.find_all(
+                "section", attrs={"data-module": "recipe-ingredients"}
+            )
+            assert (
+                len(ingredients_tag) == 1
+            ), f"Expected 1 Ingredients block - found {len(ingredients_tag)}"
             individual_ingredients_tags = ingredients_tag[0].findChildren(
-                "p",
-                attrs={"class": "o-Ingredients__a-Ingredient"},
-                recursive=True
+                "p", attrs={"class": "o-Ingredients__a-Ingredient"}, recursive=True
             )
             ing_tag: Tag
             self._ingredients = []
             for ing_tag in individual_ingredients_tags:
-                span_tag = ing_tag.findChild(name="span", attrs={"class": "o-Ingredients__a-Ingredient--CheckboxLabel"})
+                span_tag = ing_tag.findChild(
+                    name="span",
+                    attrs={"class": "o-Ingredients__a-Ingredient--CheckboxLabel"},
+                )
                 name = span_tag.string
                 if name == "Deselect All":
                     continue
