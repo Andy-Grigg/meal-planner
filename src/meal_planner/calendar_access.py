@@ -1,3 +1,5 @@
+"""Connect to an iCal database and return a list of Events."""
+
 import datetime
 
 import icalevents.icalparser
@@ -19,7 +21,7 @@ class ICalConnection:
     def all_events(self) -> Event_List:
         return self._parse_events()
 
-    def get_events_from_today_onwards(self, number_of_days: int = 7) -> Event_List:
+    def get_n_events_starting_today(self, number_of_days: int = 7) -> Event_List:
         delta = datetime.timedelta(days=number_of_days-1)
         return self._parse_events(number_of_days=delta, start_date=self._today)
 
@@ -45,9 +47,9 @@ class ICalConnection:
     def _clean_events(self, initial_response: Event_List) -> Event_List:
         events = []
         for event in initial_response:
-            assert event.all_day, "Only All Day events are supported"
             start_date = event.start.date()
             if start_date >= self._today:
                 events.append(event)
+        events = sorted(events, key=lambda x: x.start)
         return events
 

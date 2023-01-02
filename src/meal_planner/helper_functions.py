@@ -1,55 +1,74 @@
 from typing import TYPE_CHECKING
 import logging
 
-from meal_planner import Recipe, MealPlan
-from meal_planner import data_access
+from .models import MealPlan, Recipe
+from .recipe_factory import RecipeFactory
+from . import data_access
+from .calendar_access import ICalConnection
 
 if TYPE_CHECKING:
-    from meal_planner import ICalConnection
     from datetime import date
 
 logger = logging.getLogger("discord.helper_functions")
 
 
-def create_shopping_list_from_calendar(
-        ical: "ICalConnection",
-        number_of_days: int = 7
-) -> list[MealPlan]:
-    events = ical.get_events_from_today_onwards(number_of_days)
+def get_calendar(url: str) -> ICalConnection:
+    logger.info("Getting calendar")
+    ical = ICalConnection(url)
+    return ical
 
+
+def convert_calendar_to_meal_plans(
+        ical: ICalConnection,
+        number_of_days: int,
+) -> list[MealPlan]:
+    events = ical.get_n_events_starting_today(number_of_days)
+
+    logger.info("Extracting meal plans from calendar.")
     meal_plans = []
     for event in events:
         recipe = data_access.get_recipe(event.summary)
-        if recipe is None and event.url:
-            logger.info(f'Cache miss for {event.summary}. Retrieving from url.')
-            recipe = Recipe.create_recipe(name=event.summary, url=event.url)
-            if recipe is not None:
-                data_access.write_recipe(name=recipe.name, url=recipe.url, ingredients=recipe.ingredients)
-        elif recipe is None:
-            logger.info(f'{event.summary} has no URL. Ignoring.')
+        if recipe is None:
+            logger.info(f'Recipe {event.summary} not found in database.')
+            if event.url:
+                create_and_persist_recipe(name=event.summary, url=event.url)
+            else:
+                logger.info(f'No URL provided. Ignoring.')
         else:
-            logger.info(f'Cache hit for {recipe.name}')
+            logger.info(f'Recipe {recipe.name} found in database.')
         mp = MealPlan(name=event.summary, date=event.start.date(), recipe=recipe)
         meal_plans.append(mp)
+    logger.info(f"Generated {len(meal_plans)} meal plans.")
     return meal_plans
 
 
-def create_meal_plan_from_calendar(
-        ical: "ICalConnection",
-        number_of_days: int = 7
-) -> dict["datetime.date", str]:
-    events = ical.get_events_from_today_onwards(number_of_days)
+def create_and_persist_recipe(name: str, url: str | None = None) -> Recipe:
+    logger.info(f'Retrieving recipe {name} from url and writing to database.')
+    new_recipe = RecipeFactory.create_recipe(name=name, url=url)
+    if new_recipe:
+        data_access.write_recipe(
+            name=new_recipe.name,
+            url=new_recipe.url,
+            ingredients=new_recipe.ingredients,
+        )
+    return new_recipe
 
-    meal_names_by_date = {}
-    for event in events:
-        meal_names_by_date[event.start.date()] = event.summary
-    return meal_names_by_date
+
+def get_all_recipes() -> list[Recipe]:
+    logger.info('Retrieving all recipes.')
+    all_recipes = data_access.get_all_recipes()
+    return all_recipes
 
 
-if __name__ == "__main__":
-    import os
-    from meal_planner import ICalConnection
+def get_recipe(name: str) -> Recipe:
+    return data_access.get_recipe(name)
 
-    ical = ICalConnection(os.getenv("CALENDAR_URL"))
-    list = create_shopping_list_from_calendar(ical, 7)
-    print(list)
+
+def delete_recipe(name: str):
+    logger.info(f"Deleting recipe {name}.")
+    data_access.delete_recipe(name)
+
+
+def add_ingredient_to_recipe():
+    pass
+

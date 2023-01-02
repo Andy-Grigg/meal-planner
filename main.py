@@ -1,17 +1,15 @@
 import os
-from meal_planner import ICalConnection, create_meal_plans_from_calendar
+from meal_planner import (
+    convert_calendar_to_meal_plans,
+    ICalConnection,
+    delete_recipe,
+    get_all_recipes,
+    create_and_persist_recipe,
+)
 
-# TODO: Register a URL through discord
-ical = ICalConnection(os.getenv("CALENDAR_URL"))
+get_all_recipes()
 
-# TODO: Where do I store it? I'm going to need a database of users or something
-plans = create_meal_plans_from_calendar(ical, 7)
+create_and_persist_recipe("Cheddar stew")
 
-plans_dict = sorted(plans, key=lambda x: x.date)
-
-# TODO: Post shopping list through discord
-for plan in plans_dict:
-    print(f"{plan.date}: {plan.name}")
-    if plan.recipe:
-        for ingredient in plan.recipe.ingredients:
-            print("  " + str(ingredient))
+for r in get_all_recipes():
+    print(r)

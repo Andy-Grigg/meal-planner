@@ -4,13 +4,20 @@ from bs4 import BeautifulSoup
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from meal_planner.classes import Ingredient
+from .models import (
+    Ingredient,
+    Recipe as RecipeModel
+)
 
 if TYPE_CHECKING:
     from bs4.element import Tag
 
 
-class Recipe(ABC):
+class UnknownRecipeProvider(NotImplementedError):
+    pass
+
+
+class RecipeFactory(ABC):
     hostname = None
     recipe_scrapers = {}
     ingredients: list["Ingredient"]
@@ -31,28 +38,35 @@ class Recipe(ABC):
         self._soup = None
 
     @classmethod
-    def create_recipe(cls, *args, **kwargs) -> "Recipe | None":
+    def create_recipe(cls, *args, **kwargs) -> "RecipeModel":
         if "url" not in kwargs or kwargs["url"] is None:
-            return None
-        url = kwargs["url"]
-        parsed_url = urlparse(url)
-        hostname = parsed_url.hostname
-        for source, klass in cls.recipe_scrapers.items():
-            if source and source in hostname:
-                return klass(*args, **kwargs)
-        raise NotImplementedError
+            recipe = ManualRecipe(name=kwargs["name"])
+        else:
+            url = kwargs["url"]
+            parsed_url = urlparse(url)
+            hostname = parsed_url.hostname
+            recipe = None
+            for source, klass in cls.recipe_scrapers.items():
+                if source and source in hostname:
+                    recipe = klass(*args, **kwargs).model
+            if recipe is None:
+                raise UnknownRecipeProvider(f"No implementation found for {hostname}")
+
+        recipe_model = RecipeModel(
+            name=recipe.name,
+            url=recipe.url,
+            ingredients=recipe.ingredients,
+        )
+        return recipe_model
 
 
-class ManualRecipe(Recipe):
+class ManualRecipe(RecipeFactory):
     @property
     def ingredients(self) -> list["Ingredient"]:
         return self._ingredients if self._ingredients is not None else []
 
-    def __repr__(self) -> str:
-        return f"{self.name}: {len(self.ingredients)} ingredients"
 
-
-class WebpageRecipe(Recipe):
+class WebpageRecipe(RecipeFactory):
     @property
     def soup(self) -> BeautifulSoup | None:
         if not self.url:
@@ -66,12 +80,9 @@ class WebpageRecipe(Recipe):
     def ingredients(self) -> list["Ingredient"]:
         raise NotImplementedError
 
-    def __repr__(self) -> str:
-        return f"{self.name} ({self.url}): {len(self.ingredients)} ingredients"
-
 
 class SkinnyTasteRecipe(WebpageRecipe):
-    hostname = "skinnytaste"
+    hostname = "skinnytaste.com"
 
     INGREDIENTS_SELECTOR = '.wprm-recipe-ingredient-group'
 
@@ -101,3 +112,28 @@ class SkinnyTasteRecipe(WebpageRecipe):
         except AttributeError:
             amount = None
         return amount
+
+
+class FoodNetworkRecipe(WebpageRecipe):
+    hostname = "foodnetwork.com"
+
+    @property
+    def ingredients(self) -> list["Ingredient"]:
+        if self._ingredients is None:
+            ingredients_tag = self.soup.find_all('section', attrs={'data-module': 'recipe-ingredients'})
+            assert len(ingredients_tag) == 1, f"Expected 1 Ingredients block - found {len(ingredients_tag)}"
+            individual_ingredients_tags = ingredients_tag[0].findChildren(
+                "p",
+                attrs={"class": "o-Ingredients__a-Ingredient"},
+                recursive=True
+            )
+            ing_tag: Tag
+            self._ingredients = []
+            for ing_tag in individual_ingredients_tags:
+                span_tag = ing_tag.findChild(name="span", attrs={"class": "o-Ingredients__a-Ingredient--CheckboxLabel"})
+                name = span_tag.string
+                if name == "Deselect All":
+                    continue
+                ing = Ingredient(name=name)
+                self._ingredients.append(ing)
+        return self._ingredients

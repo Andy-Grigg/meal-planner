@@ -1,13 +1,17 @@
 import os
 import logging
+from functools import wraps
 
 import discord
 from discord import app_commands
 
 from meal_planner import (
-    create_shopping_list_from_calendar,
-    create_meal_plan_from_calendar,
-    ICalConnection,
+    convert_calendar_to_meal_plans,
+    create_and_persist_recipe,
+    get_calendar,
+    get_all_recipes,
+    delete_recipe,
+    get_recipe,
 )
 
 
@@ -23,6 +27,24 @@ tree = app_commands.CommandTree(client)
 logger = logging.getLogger("discord.meal_planner")
 
 
+def database_access(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        interaction = args[0]
+        logger.info(f'{interaction.data["name"]} request received from user "{interaction.user}"')
+        await interaction.response.defer()
+        try:
+            output = await func(*args, **kwargs)
+        except Exception as e:
+            logger.info(f'Something went wrong... {str(e)}')
+            await interaction.followup.send("Something went wrong. Check your args and try again.")
+            return None
+        await interaction.followup.send("Done")
+        logger.info(f'{interaction.data["name"]} completed')
+        return output
+    return wrapper
+
+
 @client.event
 async def on_ready():
     await tree.sync(guild=guild)
@@ -31,55 +53,74 @@ async def on_ready():
 
 @tree.command(
     name="shoppinglist",
-    description="Get a shopping list for the next 7 days",
+    description="Get a shopping list for n days (default 10)",
     guild=guild,
 )
-async def on_message(interaction):
-    logger.info(f"shoppinglist request received from user {interaction.user}")
-    await interaction.response.defer()
-
-    logger.info("Getting calendar")
-    ical = ICalConnection(os.getenv("CALENDAR_URL"))
-
-    logger.info("Extracting meal plans from calendar")
-    plans = create_shopping_list_from_calendar(ical, 7)
-    plans_dict = sorted(plans, key=lambda x: x.date)
-
-    logger.info("Generated meal plans")
-    for plan in plans_dict:
-        response = f"{plan.date}: {plan.name}\n"
-        if plan.recipe:
-            for ingredient in plan.recipe.ingredients:
-                response += f"- {ingredient}\n"
-        await interaction.user.send(response)
+@database_access
+async def on_message(interaction, number_of_days: int = 10):
+    ical = get_calendar(os.getenv("CALENDAR_URL"))
+    plans = convert_calendar_to_meal_plans(ical, number_of_days)
+    for plan in plans:
+        await interaction.user.send(plan.shopping_list)
         logger.info(f'Sent message for plan "{plan.name}"')
-    await interaction.followup.send("Done!")
-    logger.info("Done")
 
 
 @tree.command(
     name="mealplan",
-    description="Get the planned meals for the next 7 days",
+    description="Get planned meals for n days (default 10)",
     guild=guild,
 )
+@database_access
+async def on_message(interaction, number_of_days: int = 10):
+    ical = get_calendar(os.getenv("CALENDAR_URL"))
+    plans = convert_calendar_to_meal_plans(ical, number_of_days)
+    await interaction.user.send("\n".join([str(p) for p in plans]))
+
+
+@tree.command(
+    name="addrecipe",
+    description="Add a recipe with a name and an optional url to the recipe",
+    guild=guild,
+)
+@database_access
+async def on_message(interaction, name: str, url: str | None = None):
+    logger.info(f"name: {name}")
+    logger.info(f"url: {url}")
+    recipe = create_and_persist_recipe(name, url)
+    await interaction.user.send(f'Successfully imported recipe "{str(recipe)}".')
+
+
+@tree.command(
+    name="recipes",
+    description="List all available recipes",
+    guild=guild,
+)
+@database_access
 async def on_message(interaction):
-    logger.info(f'mealplan request received from user "{interaction.user}"')
-    await interaction.response.defer()
+    all_recipes = get_all_recipes()
+    await interaction.user.send("\n".join([str(r) for r in all_recipes]))
 
-    logger.info("Getting calendar")
-    ical = ICalConnection(os.getenv("CALENDAR_URL"))
 
-    logger.info("Extracting meal plans from calendar")
-    meal_plans_for_week = create_meal_plan_from_calendar(ical, 7)
-    meal_plans_for_week = dict(sorted(meal_plans_for_week.items()))
+@tree.command(
+    name="deleterecipe",
+    description="Delete a recipe by name",
+    guild=guild,
+)
+@database_access
+async def on_message(interaction, name: str):
+    delete_recipe(name)
+    await interaction.user.send(f"Deleted recipe {name}")
 
-    logger.info("Generated meal plans")
-    response = ""
-    for date, plan_name in meal_plans_for_week.items():
-        response += f"{date}: {plan_name}\n"
-    await interaction.user.send(response)
-    await interaction.followup.send("Done!")
-    logger.info("Done")
+
+@tree.command(
+    name="recipedetails",
+    description="Get the details of a specific recipe",
+    guild=guild,
+)
+@database_access
+async def on_message(interaction, name: str):
+    recipe = get_recipe(name)
+    await interaction.user.send(recipe.shopping_list)
 
 
 client.run(TOKEN)

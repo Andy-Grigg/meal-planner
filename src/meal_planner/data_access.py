@@ -1,28 +1,11 @@
-from typing import Optional, TYPE_CHECKING, Any
 import logging
 
 from pymongo import MongoClient
-from pydantic import BaseModel
+from bunnet import init_bunnet
 
-
-from bunnet import Document, init_bunnet
-
-if TYPE_CHECKING:
-    from .classes import Ingredient as ClIngredient
+from .models import Recipe, Ingredient
 
 logger = logging.getLogger("discord.meal_planner.data_access")
-
-
-class Ingredient(BaseModel):
-    name: str
-    amount: Optional[str | float | int]
-    unit: Optional[str]
-
-
-class Recipe(Document):
-    name: str
-    url: Optional[str]
-    ingredients: list[Ingredient]
 
 
 class _MongoConnection:
@@ -49,16 +32,28 @@ def requires_connection(func):
 
 
 @requires_connection
-def get_recipe(recipe_name: str):
+def get_recipe(recipe_name: str) -> Recipe:
     recipe = Recipe.find_one(Recipe.name == recipe_name).run()
+    if not recipe:
+        raise ValueError(f"Recipe {recipe_name} not found in database.")
     return recipe
 
 
 @requires_connection
-def write_recipe(name: str, url: str, ingredients: list["ClIngredient"]):
-    logger.info(ingredients)
-    ingredients = [Ingredient(name=i.name, amount=i.amount, unit=i.unit) for i in ingredients]
-    logger.info(name)
-    logger.info(url)
+def write_recipe(name: str, url: str, ingredients: list[Ingredient]) -> None:
+    logger.info(f"Writing recipe {name} to database.")
     recipe = Recipe(name=name, url=url, ingredients=ingredients)
     recipe.insert()
+    logger.info(f"Success.")
+
+
+@requires_connection
+def delete_recipe(name: str) -> None:
+    logger.info(f"Deleting recipe {name} from database.")
+    recipe_to_delete = get_recipe(name).delete()
+
+
+@requires_connection
+def get_all_recipes() -> list[Recipe]:
+    recipes = Recipe.find_all().run()
+    return recipes
