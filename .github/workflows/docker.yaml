@@ -7,7 +7,7 @@ on:
         description: 'Push to ghcr'
         default: false
         required: false
-        type: bool
+        type: boolean
     secrets:
       PAT:
         description: 'A token passed from the caller workflow'
