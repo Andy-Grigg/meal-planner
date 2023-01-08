@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   build_python:
+    name: Build and test Python
     runs-on: ubuntu-latest
 
     steps:
@@ -39,13 +40,16 @@ jobs:
 
 
   build_docker:
+    name: Build docker image
     uses: ./.github/workflows/docker.yaml
     with:
       push_to_ghcr: false
 
 
   release:
+    name: Release docker image
     needs: [ build_python, build_docker ]
+    if: startsWith(github.ref, 'refs/tags/v')
     uses: ./.github/workflows/docker.yaml
     with:
       push_to_ghcr: true
