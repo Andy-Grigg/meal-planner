@@ -36,5 +36,5 @@ jobs:
         with:
           push: ${{ inputs.push_to_ghcr }}
           tags: |
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/andy-grigg/meal-planner-bot:latest
   
