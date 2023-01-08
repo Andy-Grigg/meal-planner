@@ -1,4 +1,4 @@
-name: Build and test bot
+name: Build and test
 
 on:
   push:
@@ -37,10 +37,22 @@ jobs:
       run: |
         poetry run pytest
 
+  docker_build:
+    name: Build docker image
+    needs: [ build ]
+    call-docker:
+      uses: ./.github/workflows/docker.yaml
+      with:
+        push_to_ghcr: false
 
   release:
     runs-on: ubuntu-latest
-    needs: [ build ]
+    needs: [ docker ]
+
+    with:
+      push_to_ghcr: true
+    secrets:
+      envPAT: ${{ secrets.PAT }}
 
     steps:
     - name: Release
