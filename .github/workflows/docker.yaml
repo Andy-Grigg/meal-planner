@@ -9,7 +9,7 @@ on:
         required: false
         type: bool
     secrets:
-      pat:
+      PAT:
         description: 'A token passed from the caller workflow'
         required: false
     
@@ -38,3 +38,10 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.ref }}
             ghcr.io/${{ github.repository }}:latest
+  
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: inputs.push_to_ghcr
