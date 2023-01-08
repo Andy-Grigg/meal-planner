@@ -40,10 +40,9 @@ jobs:
   docker_build:
     name: Build docker image
     needs: [ build ]
-    call-docker:
-      uses: ./.github/workflows/docker.yaml
-      with:
-        push_to_ghcr: false
+    uses: ./.github/workflows/docker.yaml
+    with:
+      push_to_ghcr: false
 
   release:
     runs-on: ubuntu-latest

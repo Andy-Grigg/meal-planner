@@ -13,7 +13,8 @@ on:
         description: 'A token passed from the caller workflow'
         required: false
     
-docker:
+jobs:
+  docker:
     runs-on: ubuntu-latest
     steps:
       - name: Set up QEMU
