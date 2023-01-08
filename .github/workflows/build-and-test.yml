@@ -39,14 +39,12 @@ jobs:
 
 
   build_docker:
-  - name: Build docker image
     uses: ./.github/workflows/docker.yaml
     with:
       push_to_ghcr: false
 
 
   release:
-    - name: Release docker image
     needs: [ build_python, build_docker ]
     uses: ./.github/workflows/docker.yaml
     with:
