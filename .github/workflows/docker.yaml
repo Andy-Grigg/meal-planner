@@ -36,12 +36,5 @@ jobs:
         with:
           push: ${{ inputs.push_to_ghcr }}
           tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref }}
             ghcr.io/${{ github.repository }}:latest
   
-  release:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      if: inputs.push_to_ghcr
